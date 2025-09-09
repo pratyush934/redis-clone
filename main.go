@@ -28,15 +28,19 @@ func NewServer(cfg Config) *Server {
 		cfg.ListenAddress = defaultAddress
 	}
 	return &Server{
-		config: cfg,
-		peers:  make(map[*Peer]bool),
+		config:      cfg,
+		peers:       make(map[*Peer]bool),
+		addPeerChan: make(chan *Peer),
+		delPeerChan: make(chan *Peer),
+		quitChan:    make(chan struct{}),
 	}
 }
 
 func (s *Server) Start() error {
 	ln, err := net.Listen("tcp", s.config.ListenAddress)
 
-	fmt.Print("Hey I am Running")
+	fmt.Println("Hey I am Running")
+	slog.Info("I am Running and you should be glad\n")
 
 	if err != nil {
 		return err
@@ -80,6 +84,8 @@ func (s *Server) acceptLoop() error {
 func (s *Server) handleConnection(conn net.Conn) {
 	peer := NewPeer(conn)
 	s.addPeerChan <- peer
+	fmt.Println("Hello peer", peer)
+	slog.Info("I am HandleConnection and I am Working", "addr", conn)
 
 	if err := peer.readLoop(); err != nil {
 		slog.Error("error is there in peer.ReadLoop", "err", err, "remoteAddr : ", conn.RemoteAddr())

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 )
 
@@ -16,8 +17,18 @@ func NewPeer(conn net.Conn) *Peer {
 }
 
 func (p *Peer) readLoop() error {
+
+	buf := make([]byte, 1024)
+
 	for {
-		fmt.Print("read ho ho")
+		n, err := p.conn.Read(buf)
+
+		if err != nil {
+			slog.Error("peer read error, ", "err ", err)
+			return err
+		}
+		fmt.Println(string(buf[:n]))
 	}
+
 	return nil
 }
