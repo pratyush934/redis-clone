@@ -21,6 +21,7 @@ type Server struct {
 	addPeerChan chan *Peer
 	delPeerChan chan *Peer
 	quitChan    chan struct{}
+	msg         chan []byte
 }
 
 func NewServer(cfg Config) *Server {
@@ -33,6 +34,7 @@ func NewServer(cfg Config) *Server {
 		addPeerChan: make(chan *Peer),
 		delPeerChan: make(chan *Peer),
 		quitChan:    make(chan struct{}),
+		msg:         make(chan []byte),
 	}
 }
 
@@ -57,6 +59,11 @@ func (s *Server) loop() {
 	for {
 		select {
 
+		case rawMs := <-s.msg:
+			if err := s.handleRawMessage(rawMs); err != nil {
+				slog.Error("issue persist in the s.handleRawMessage")
+			}
+			fmt.Println("rwaMsg looks like ", rawMs, "the string version is", string(rawMs))
 		case <-s.quitChan:
 			return
 		case peer := <-s.addPeerChan:
@@ -67,6 +74,13 @@ func (s *Server) loop() {
 
 		}
 	}
+}
+
+func (s *Server) handleRawMessage(rawMsg []byte) error {
+
+	fmt.Println(string(rawMsg))
+
+	return nil
 }
 
 func (s *Server) acceptLoop() error {
@@ -82,7 +96,7 @@ func (s *Server) acceptLoop() error {
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
-	peer := NewPeer(conn)
+	peer := NewPeer(conn, s.msg)
 	s.addPeerChan <- peer
 	fmt.Println("Hello peer", peer)
 	slog.Info("I am HandleConnection and I am Working", "addr", conn)
